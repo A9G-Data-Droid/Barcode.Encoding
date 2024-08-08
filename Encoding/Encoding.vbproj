@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Barcode.Encoding</RootNamespace>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <OptionStrict>On</OptionStrict>
+    <OptionInfer>Off</OptionInfer>
+    <PackageId>Barcode.Encoding.Code128</PackageId>
+    <Title>Code 128 barcode encoder</Title>
+    <Authors>A9G-Data-Droid</Authors>
+    <Company />
+    <NeutralLanguage>en</NeutralLanguage>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <Version>$(AssemblyVersion)</Version>
+    <FileVersion>$(AssemblyVersion)</FileVersion>
+    <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <EnableNETAnalyzers>True</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <AssemblyName>Barcode.Encoding</AssemblyName>
+  </PropertyGroup>
+
+</Project>
