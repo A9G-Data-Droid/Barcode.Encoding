@@ -143,7 +143,7 @@ Public Module Code128
     ''' <param name="text">The text to pull from.</param>
     ''' <param name="startIndex">Starting place in the text.</param>
     ''' <returns>The ASCII character.</returns>
-    Private Function GetTwoDigitsToAscii(text As String, startIndex As Integer) As Char
+    Public Function GetTwoDigitsToAscii(text As String, startIndex As Integer) As Char
         Dim asciiValue As Integer = CInt(text.Substring(startIndex, TableCDataWidth))
         asciiValue = If(asciiValue < AsciiCodePageBoundary, asciiValue + AsciiLowerOffset, asciiValue + AsciiUpperOffset)
 
@@ -151,7 +151,7 @@ Public Module Code128
     End Function
 
     ''' <summary>
-    ''' Calculation of the Weighted modulo-103 checksum
+    ''' Calculation of the checksum used for Code 128. Perform modulo % 103 on the result to get the final value.
     ''' </summary>
     ''' <param name="check">The character</param>
     ''' <param name="position">The position of that character</param>
