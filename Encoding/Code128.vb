@@ -63,6 +63,7 @@ Public Module Code128
         ' Process input
         Dim optimizedBarcode As New StringBuilder
         Dim useTableB As Boolean = True
+        Dim checkSum As Integer
         Dim position As Integer
         For position = 0 To text.Length - 1
             ' Decide if a switch to table C would save space
@@ -74,13 +75,18 @@ Public Module Code128
                     ' Use Table C
                     If position = 0 Then
                         optimizedBarcode.Append(StartC)
+                        checkSum = CheckSumChar(StartC, 1)
                     Else
                         optimizedBarcode.Append(SwitchC)
+                        checkSum += CheckSumChar(SwitchC, optimizedBarcode.Length - 1)
                     End If
 
                     useTableB = False
                 Else
-                    If position = 0 Then optimizedBarcode.Append(StartB)
+                    If position = 0 Then
+                        optimizedBarcode.Append(StartB)
+                        checkSum = CheckSumChar(StartB, 1)
+                    End If
                 End If
             End If
 
@@ -92,13 +98,16 @@ Public Module Code128
                     Dim asciiValue As Integer = CInt(text.Substring(position, tableCDataWidth))
                     asciiValue = If(asciiValue < AsciiCodePageBoundary, asciiValue + AsciiLowerOffset, asciiValue + AsciiUpperOffset)
 
-                    optimizedBarcode.Append(ChrW(asciiValue))
+                    Dim value As Char = ChrW(asciiValue)
+                    optimizedBarcode.Append(value)
 
                     ' Increment because 2 digits were consumed in this pass
                     position += 1
+                    checkSum += CheckSumChar(value, optimizedBarcode.Length - 1)
                 Else
                     ' Doesn't have 2 digits left, switch to Table B
                     optimizedBarcode.Append(SwitchB)
+                    checkSum += CheckSumChar(SwitchB, optimizedBarcode.Length - 1)
                     useTableB = True
                 End If
             End If
@@ -106,24 +115,12 @@ Public Module Code128
             If useTableB Then
                 ' Process 1 digit with table B
                 optimizedBarcode.Append(text(position))
+                checkSum += CheckSumChar(text(position), optimizedBarcode.Length - 1)
             End If
 
             If optimizedBarcode.Length > MaxEncodedLength - 2 Then
                 Throw New ArgumentException("Input is too long and would not scan properly. Compressed length should not exceed 27 characters.", NameOf(text))
             End If
-        Next position
-
-        ' Calculation of the Weighted modulo-103 checksum
-        Dim checkSum As Integer
-        For position = 0 To optimizedBarcode.Length - 1
-            Dim asciiValue As Integer = AscW(optimizedBarcode.Chars(position))
-
-            ' Convert the ASCII value to the checksum value
-            asciiValue = If(asciiValue < AsciiLowerBounds, asciiValue - AsciiLowerOffset, asciiValue - AsciiUpperOffset)
-
-            If position = 0 Then checkSum = asciiValue
-
-            checkSum += position * asciiValue
         Next position
 
         checkSum = checkSum Mod 103
@@ -135,6 +132,21 @@ Public Module Code128
         optimizedBarcode.Append(ChrW(checkSum)).Append(StopCode)
 
         Return optimizedBarcode.ToString()
+    End Function
+
+    ''' <summary>
+    ''' Calculation of the Weighted modulo-103 checksum
+    ''' </summary>
+    ''' <param name="check">The character</param>
+    ''' <param name="position">The position of that character</param>
+    ''' <returns>Checksum value</returns>
+    Public Function CheckSumChar(check As Char, position As Integer) As Integer
+        Dim asciiValue As Integer = AscW(check)
+
+        ' Convert the ASCII value to the checksum value
+        asciiValue = If(asciiValue < AsciiLowerBounds, asciiValue - AsciiLowerOffset, asciiValue - AsciiUpperOffset)
+
+        Return position * asciiValue
     End Function
 
     ''' <summary>
