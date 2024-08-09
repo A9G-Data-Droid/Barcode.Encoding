@@ -41,6 +41,7 @@ Public Module Code128
     Private Const AsciiUpperOffset As Integer = 100
     Private Const MaxEncodedLength As Integer = 27
     Private Const AsciiCodePageBoundary As Integer = 95
+    Private Const TableCDataWidth As Long = 2
 
     ''' <summary>
     ''' Converts the input text to a Code 128 encoded string that can be used with a barcode font.
@@ -60,50 +61,52 @@ Public Module Code128
             Throw New ArgumentException("Invalid character in barcode string. Please only use the lower 127 ASCII characters", NameOf(text))
         End If
 
-        ' Process input
+        ' Preamble and first character
         Dim optimizedBarcode As New StringBuilder
         Dim useTableB As Boolean = True
         Dim checkSum As Integer
+        Dim startAt As Integer
+        If IsAllNumbers(text, 0, 4) Then
+            ' Use Table C
+            optimizedBarcode.Append(StartC)
+            checkSum = CheckSumChar(StartC, 1)
+            useTableB = False
+            Dim value As Char = GetTwoDigitsToAscii(text, 0)
+            optimizedBarcode.Append(value)
+            checkSum += CheckSumChar(value, optimizedBarcode.Length - 1)
+            startAt = 2
+        Else
+            optimizedBarcode.Append(StartB)
+            checkSum = CheckSumChar(StartB, 1)
+
+            ' Process 1 digit with table B
+            optimizedBarcode.Append(text(0))
+            checkSum += CheckSumChar(text(0), optimizedBarcode.Length - 1)
+            startAt = 1
+        End If
+
+        ' Process the remaining characters
         Dim position As Integer
-        For position = 0 To text.Length - 1
-            ' Decide if a switch to table C would save space
-            If useTableB Then
+        For position = startAt To text.Length - 1
+            If useTableB Then ' Decide if a switch to table C would save space
                 ' Number of digits for Table C optimization to be worth it
-                Dim dataChunk As Integer = If(position = 0 OrElse position + 3 = text.Length - 1, 4, 6)
-
+                Dim dataChunk As Integer = If(position + 3 = text.Length - 1, 4, 6)
                 If IsAllNumbers(text, position, dataChunk) Then
-                    ' Use Table C
-                    If position = 0 Then
-                        optimizedBarcode.Append(StartC)
-                        checkSum = CheckSumChar(StartC, 1)
-                    Else
-                        optimizedBarcode.Append(SwitchC)
-                        checkSum += CheckSumChar(SwitchC, optimizedBarcode.Length - 1)
-                    End If
-
-                    useTableB = False
-                Else
-                    If position = 0 Then
-                        optimizedBarcode.Append(StartB)
-                        checkSum = CheckSumChar(StartB, 1)
-                    End If
+                    useTableB = False ' Use Table C
+                    optimizedBarcode.Append(SwitchC)
+                    checkSum += CheckSumChar(SwitchC, optimizedBarcode.Length - 1)
                 End If
             End If
 
             If Not useTableB Then
-                ' We are using Table C, try to process 2 digits
-                Const tableCDataWidth As Long = 2
-
-                If IsAllNumbers(text, position, tableCDataWidth) Then
-                    Dim asciiValue As Integer = CInt(text.Substring(position, tableCDataWidth))
-                    asciiValue = If(asciiValue < AsciiCodePageBoundary, asciiValue + AsciiLowerOffset, asciiValue + AsciiUpperOffset)
-
-                    Dim value As Char = ChrW(asciiValue)
+                ' Using Table C, try to process 2 digits
+                If IsAllNumbers(text, position, TableCDataWidth) Then
+                    Dim value As Char = GetTwoDigitsToAscii(text, position)
                     optimizedBarcode.Append(value)
+                    checkSum += CheckSumChar(value, optimizedBarcode.Length - 1)
 
                     ' Increment because 2 digits were consumed in this pass
                     position += 1
-                    checkSum += CheckSumChar(value, optimizedBarcode.Length - 1)
                 Else
                     ' Doesn't have 2 digits left, switch to Table B
                     optimizedBarcode.Append(SwitchB)
@@ -132,6 +135,19 @@ Public Module Code128
         optimizedBarcode.Append(ChrW(checkSum)).Append(StopCode)
 
         Return optimizedBarcode.ToString()
+    End Function
+
+    ''' <summary>
+    ''' Table C takes two digits and represents them with a single ASCII character.
+    ''' </summary>
+    ''' <param name="text">The text to pull from.</param>
+    ''' <param name="startIndex">Starting place in the text.</param>
+    ''' <returns>The ASCII character.</returns>
+    Private Function GetTwoDigitsToAscii(text As String, startIndex As Integer) As Char
+        Dim asciiValue As Integer = CInt(text.Substring(startIndex, TableCDataWidth))
+        asciiValue = If(asciiValue < AsciiCodePageBoundary, asciiValue + AsciiLowerOffset, asciiValue + AsciiUpperOffset)
+
+        Return ChrW(asciiValue)
     End Function
 
     ''' <summary>
