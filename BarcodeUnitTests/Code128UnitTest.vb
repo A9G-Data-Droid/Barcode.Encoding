@@ -52,4 +52,11 @@ Public Class Code128UnitTest
     Public Sub IsAllNumbers_True(text As String)
         Assert.IsTrue(Code128.IsAllNumbers(text, 0, text.Length))
     End Sub
+
+    <TestMethod>
+    <DataRow("10293847", "█▐ █▌▐▌▐ ▐ █▌▐▌▐▐ ▐▌ ▌▌ █▌█▐▐ █  █ ▐█▐▐▌")>
+    Public Sub Output_Barcode_Glyphs(text As String, expectedEncoded As String)
+        'Debug.WriteLine(Code128.Code128Barcode(text, 8))
+        Assert.AreEqual(expectedEncoded, Code128.Code128Barcode(text, 0))
+    End Sub
 End Class
