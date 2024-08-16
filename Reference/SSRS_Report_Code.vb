@@ -1,32 +1,27 @@
-''' <summary>
-''' Code 128 Barcode Encoder
-''' Must be used with v2.00 font from http://grandzebu.net/informatique/codbar/code128.htm
-''' Download: http://grandzebu.net/informatique/codbar/code128.ttf
-''' </summary>
-Public Module Code128
-    ''' <summary>
+  <Code>    
+    ''' &lt;summary&gt;
     ''' Switches to Code 128 table B 
-    ''' </summary>
+    ''' &lt;/summary&gt;
     Public Const SwitchB As Char = ChrW(205) 'ChrW(199)
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Switches to Code 128 table C 
-    ''' </summary>
+    ''' &lt;/summary&gt;
     Public Const SwitchC As Char = ChrW(204) 'ChrW(200)
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Code 128 table B start character 
-    ''' </summary>
+    ''' &lt;/summary&gt;
     Public Const StartB As Char = ChrW(209)  'ChrW(204) 
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Code 128 table C start character 
-    ''' </summary>
+    ''' &lt;/summary&gt;
     Public Const StartC As Char = ChrW(210)  'ChrW(205) 
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Code 128 stop character 
-    ''' </summary>
+    ''' &lt;/summary&gt;
     Public Const StopCode As Char = ChrW(211) 'ChrW(206) 
 
     Private Const AsciiLowerBounds As Integer = 127
@@ -38,16 +33,16 @@ Public Module Code128
     Private Const Gs1MaximumLength As Integer = 48
     Private Const ParamName As String = "text"
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Converts the input text to a Code 128 encoded string that can be used with a barcode font.
-    ''' </summary>
-    ''' <param name="text">The text you want to convert to a barcode.</param>
-    ''' <returns>An encoded string which produces a bar code when displayed using a Code128 font.</returns>
+    ''' &lt;/summary&gt;
+    ''' &lt;param name="text"&gt;The text you want to convert to a barcode.&lt;/param&gt;
+    ''' &lt;returns&gt;An encoded string which produces a bar code when displayed using a Code128 font.&lt;/returns&gt;
     Public Function GetCode128EncodedString(text As String) As String
         ' Validate input
-        If text.Length < 1 Then
+        If text.Length &lt; 1 Then
             Return text
-        ElseIf text.Length > Gs1MaximumLength Then
+        ElseIf text.Length &gt; Gs1MaximumLength Then
             Throw New ArgumentOutOfRangeException(ParamName, "Input is too long and would not scan properly. Please use less than 48 characters.")
         End If
 
@@ -58,21 +53,21 @@ Public Module Code128
         Dim startAt As Integer
         If IsAllNumbers(text, 0, 4) Then
             ' Use Table C
-            optimizedBarcode &= StartC
+            optimizedBarcode &amp;= StartC
             checkSum = CheckSumChar(StartC, 1)
             useTableB = False
             Dim value As Char = GetTwoDigitsToAscii(text, 0)
-            optimizedBarcode &= value
+            optimizedBarcode &amp;= value
             checkSum += CheckSumChar(value, optimizedBarcode.Length - 1)
             startAt = 2
         Else
-            optimizedBarcode &= StartB
+            optimizedBarcode &amp;= StartB
             checkSum = CheckSumChar(StartB, 1)
 
             ' Process 1 digit with table B
             Dim nextValue As Char = text(0)
             CheckValid(nextValue)
-            optimizedBarcode &= nextValue
+            optimizedBarcode &amp;= nextValue
             checkSum += CheckSumChar(nextValue, optimizedBarcode.Length - 1)
             startAt = 1
         End If
@@ -85,7 +80,7 @@ Public Module Code128
                 Dim dataChunk As Integer = If(position + 3 = text.Length - 1, 4, 6)
                 If IsAllNumbers(text, position, dataChunk) Then
                     useTableB = False ' Use Table C
-                    optimizedBarcode &= SwitchC
+                    optimizedBarcode &amp;= SwitchC
                     checkSum += CheckSumChar(SwitchC, optimizedBarcode.Length - 1)
                 End If
             End If
@@ -94,14 +89,14 @@ Public Module Code128
                 ' Using Table C, try to process 2 digits
                 If IsAllNumbers(text, position, TableCDataWidth) Then
                     Dim value As Char = GetTwoDigitsToAscii(text, position)
-                    optimizedBarcode &= value
+                    optimizedBarcode &amp;= value
                     checkSum += CheckSumChar(value, optimizedBarcode.Length - 1)
 
                     ' Increment because 2 digits were consumed in this pass
                     position += 1
                 Else
                     ' Doesn't have 2 digits left, switch to Table B
-                    optimizedBarcode &= SwitchB
+                    optimizedBarcode &amp;= SwitchB
                     checkSum += CheckSumChar(SwitchB, optimizedBarcode.Length - 1)
                     useTableB = True
                 End If
@@ -111,11 +106,11 @@ Public Module Code128
                 ' Process 1 digit with table B
                 Dim nextValue As Char = text(position)
                 CheckValid(nextValue)
-                optimizedBarcode &= nextValue
+                optimizedBarcode &amp;= nextValue
                 checkSum += CheckSumChar(nextValue, optimizedBarcode.Length - 1)
             End If
 
-            If optimizedBarcode.Length > MaxEncodedLength - 2 Then
+            If optimizedBarcode.Length &gt; MaxEncodedLength - 2 Then
                 Throw New ArgumentOutOfRangeException(ParamName, "Input is too long and would not scan properly. Compressed length should not exceed 27 characters.")
             End If
         Next position
@@ -123,51 +118,51 @@ Public Module Code128
         checkSum = checkSum Mod 103
 
         ' Convert the checksum to ASCII code
-        checkSum = If(checkSum < AsciiCodePageBoundary, checkSum + AsciiLowerOffset, checkSum + AsciiUpperOffset)
+        checkSum = If(checkSum &lt; AsciiCodePageBoundary, checkSum + AsciiLowerOffset, checkSum + AsciiUpperOffset)
 
         ' Add the checksum and STOP characters
-        optimizedBarcode &= ChrW(checkSum) & StopCode
+        optimizedBarcode &amp;= ChrW(checkSum) &amp; StopCode
 
         Return optimizedBarcode
     End Function
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Table C takes two digits and represents them with a single ASCII character.
-    ''' </summary>
-    ''' <param name="text">The text to pull from.</param>
-    ''' <param name="startIndex">Starting place in the text.</param>
-    ''' <returns>The ASCII character.</returns>
+    ''' &lt;/summary&gt;
+    ''' &lt;param name="text"&gt;The text to pull from.&lt;/param&gt;
+    ''' &lt;param name="startIndex"&gt;Starting place in the text.&lt;/param&gt;
+    ''' &lt;returns&gt;The ASCII character.&lt;/returns&gt;
     Public Function GetTwoDigitsToAscii(text As String, startIndex As Integer) As Char
         Dim asciiValue As Integer = CInt(text.Substring(startIndex, TableCDataWidth))
-        asciiValue = If(asciiValue < AsciiCodePageBoundary, asciiValue + AsciiLowerOffset, asciiValue + AsciiUpperOffset)
+        asciiValue = If(asciiValue &lt; AsciiCodePageBoundary, asciiValue + AsciiLowerOffset, asciiValue + AsciiUpperOffset)
 
         Return ChrW(asciiValue)
     End Function
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Calculation of the checksum used for Code 128. Perform modulo % 103 on the result to get the final value.
-    ''' </summary>
-    ''' <param name="check">The character</param>
-    ''' <param name="position">The position of that character</param>
-    ''' <returns>Checksum value</returns>
+    ''' &lt;/summary&gt;
+    ''' &lt;param name="check"&gt;The character&lt;/param&gt;
+    ''' &lt;param name="position"&gt;The position of that character&lt;/param&gt;
+    ''' &lt;returns&gt;Checksum value&lt;/returns&gt;
     Public Function CheckSumChar(check As Char, position As Integer) As Integer
         Dim asciiValue As Integer = AscW(check)
 
         ' Convert the ASCII value to the checksum value
-        asciiValue = If(asciiValue < AsciiLowerBounds, asciiValue - AsciiLowerOffset, asciiValue - AsciiUpperOffset)
+        asciiValue = If(asciiValue &lt; AsciiLowerBounds, asciiValue - AsciiLowerOffset, asciiValue - AsciiUpperOffset)
 
         Return position * asciiValue
     End Function
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Looks at a section of a string and test of all those characters are numbers.
-    ''' </summary>
-    ''' <param name="sourceString">The string to test.</param>
-    ''' <param name="startPos">First character position.</param>
-    ''' <param name="numChars">How many characters to test.</param>
-    ''' <returns>True when all the checked characters are numeric</returns>
+    ''' &lt;/summary&gt;
+    ''' &lt;param name="sourceString"&gt;The string to test.&lt;/param&gt;
+    ''' &lt;param name="startPos"&gt;First character position.&lt;/param&gt;
+    ''' &lt;param name="numChars"&gt;How many characters to test.&lt;/param&gt;
+    ''' &lt;returns&gt;True when all the checked characters are numeric&lt;/returns&gt;
     Public Function IsAllNumbers(sourceString As String, startPos As Integer, numChars As Integer) As Boolean
-        If startPos < 0 OrElse startPos + numChars > sourceString.Length Then Return False
+        If startPos &lt; 0 OrElse startPos + numChars &gt; sourceString.Length Then Return False
 
         Dim i As Integer
         For i = startPos To startPos + numChars - 1
@@ -177,11 +172,11 @@ Public Module Code128
         Return True
     End Function
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' This implementation only supports ASCII characters lower than 128, excluding control characters (below 33)
-    ''' </summary>
-    ''' <param name="c">A character.</param>
-    ''' <returns>True if supported.</returns>
+    ''' &lt;/summary&gt;
+    ''' &lt;param name="c"&gt;A character.&lt;/param&gt;
+    ''' &lt;returns&gt;True if supported.&lt;/returns&gt;
     Public Function IsValid128(c As Char) As Boolean
         Select Case AscW(c)
             Case 32 To 126
@@ -191,11 +186,11 @@ Public Module Code128
         End Select
     End Function
 
-    ''' <summary>
+    ''' &lt;summary&gt;
     ''' Throws when an unsupported character is passed.
-    ''' </summary>
-    ''' <param name="text">A character.</param>
+    ''' &lt;/summary&gt;
+    ''' &lt;param name="text"&gt;A character.&lt;/param&gt;
     Public Sub CheckValid(text As Char)
         If Not IsValid128(text) Then Throw New ArgumentOutOfRangeException(ParamName, "Invalid character in barcode string. Please only use only printable characters in the lower 127 range.")
     End Sub
-End Module
+  </Code>

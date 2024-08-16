@@ -17,6 +17,18 @@
     <EnableNETAnalyzers>True</EnableNETAnalyzers>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <AssemblyName>Barcode.Encoding</AssemblyName>
+    <Description>For use in SSRS reports.</Description>
+    <PackageProjectUrl>https://github.com/A9G-Data-Droid/Barcode.Encoding</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/A9G-Data-Droid/Barcode.Encoding.git</RepositoryUrl>
+    <PackageTags>barcode,ssrs,code 128</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
