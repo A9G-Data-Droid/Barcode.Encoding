@@ -1,203 +1,41 @@
-Imports System.Text
-Imports System.Text.RegularExpressions
-
-
 ''' <summary>
 ''' Code 128 Barcode Encoder
+''' Must be used with v2.00 font from http://grandzebu.net/informatique/codbar/code128.htm
+''' Download: http://grandzebu.net/informatique/codbar/code128.ttf
 ''' </summary>
 Public Module Code128
     ''' <summary>
     ''' Switches to Code 128 table B 
     ''' </summary>
-    Private Const SwitchB As Char = ChrW(200)
+    Public Const SwitchB As Char = ChrW(205) 'ChrW(199)
 
     ''' <summary>
     ''' Switches to Code 128 table C 
     ''' </summary>
-    Private Const SwitchC As Char = ChrW(199)
-
-    '''' <summary>
-    '''' Code 128 table A start character, not used
-    '''' </summary>
-    'Private Const StartA As Char = ChrW(203)
+    Public Const SwitchC As Char = ChrW(204) 'ChrW(200)
 
     ''' <summary>
     ''' Code 128 table B start character 
     ''' </summary>
-    Private Const StartB As Char = ChrW(204)
+    Public Const StartB As Char = ChrW(209)  'ChrW(204) 
 
     ''' <summary>
     ''' Code 128 table C start character 
     ''' </summary>
-    Private Const StartC As Char = ChrW(205)
+    Public Const StartC As Char = ChrW(210)  'ChrW(205) 
 
     ''' <summary>
     ''' Code 128 stop character 
     ''' </summary>
-    Private Const StopCode As Char = ChrW(206)
+    Public Const StopCode As Char = ChrW(211) 'ChrW(206) 
 
     Private Const AsciiLowerBounds As Integer = 127
     Private Const AsciiLowerOffset As Integer = 32
-    Private Const AsciiUpperOffset As Integer = 100
+    Private Const AsciiUpperOffset As Integer = 105
     Private Const MaxEncodedLength As Integer = 27
     Private Const AsciiCodePageBoundary As Integer = 95
     Private Const TableCDataWidth As Long = 2
-
-    ''' <summary>
-    ''' The symbols used to portray the lines in the barcode.
-    ''' </summary>
-    Private ReadOnly BarcodeLines As New Dictionary(Of String, Char) From {
-        {"00", " "c},
-        {"01", ChrW(9616)},
-        {"10", ChrW(9612)},
-        {"11", ChrW(9608)}
-    }
-
-    Private ReadOnly Code128BarPerChar As Dictionary(Of Char, String) = New Dictionary(Of Char, String) From {
-            {" "c, "11011001100"},
-            {"!"c, "11001101100"},
-           {""""c, "11001100110"},
-            {"#"c, "10010011000"},
-            {"$"c, "10010001100"},
-            {"%"c, "10001001100"},
-            {"&"c, "10011001000"},
-            {"'"c, "10011000100"},
-            {"("c, "10001100100"},
-            {")"c, "11001001000"},
-            {"*"c, "11000100100"},
-            {"+"c, "10110011100"},
-            {","c, "10001101000"},
-            {"-"c, "10101101000"},
-            {"."c, "10010000100"},
-            {"/"c, "10110110000"},
-            {"0"c, "11000010100"},
-            {"1"c, "11000100010"},
-            {"2"c, "11000110110"},
-            {"3"c, "11001000010"},
-            {"4"c, "11001010110"},
-            {"5"c, "11001101010"},
-            {"6"c, "11010001110"},
-            {"7"c, "11010010010"},
-            {"8"c, "11010110010"},
-            {"9"c, "11011001010"},
-            {":"c, "10100010100"},
-            {";"c, "10101010000"},
-            {"<"c, "10100011000"},
-            {"="c, "10100011100"},
-            {">"c, "10100101100"},
-            {"?"c, "10101001000"},
-            {"@"c, "10100101000"},
-            {"A"c, "10110011110"},
-            {"B"c, "10110101110"},
-            {"C"c, "10110110010"},
-            {"D"c, "10111000110"},
-            {"E"c, "10111010010"},
-            {"F"c, "10111100010"},
-            {"G"c, "11010011110"},
-            {"H"c, "11010101110"},
-            {"I"c, "11010110010"},
-            {"J"c, "11011000110"},
-            {"K"c, "11011010010"},
-            {"L"c, "11011100010"},
-            {"M"c, "11100011110"},
-            {"N"c, "11100101110"},
-            {"O"c, "11100110010"},
-            {"P"c, "11101000110"},
-            {"Q"c, "11101010010"},
-            {"R"c, "11101100010"},
-            {"S"c, "11110011110"},
-            {"T"c, "11110101110"},
-            {"U"c, "11110110010"},
-            {"V"c, "11111000110"},
-            {"W"c, "11111010010"},
-            {"X"c, "11111100010"},
-            {"Y"c, "11100011010"},
-            {"Z"c, "11100101010"},
-            {"["c, "11100110100"},
-            {"\"c, "11101001010"},
-            {"]"c, "11101010100"},
-            {"^"c, "11101100100"},
-            {"_"c, "11101101000"},
-            {"`"c, "11110000100"},
-            {"a"c, "11110010000"},
-            {"b"c, "11110100000"},
-            {"c"c, "11110110000"},
-            {"d"c, "11111000000"},
-            {"e"c, "11111010000"},
-            {"f"c, "11111100000"},
-            {"g"c, "11111110000"},
-            {"h"c, "00000011000"},
-            {"i"c, "00000100100"},
-            {"j"c, "00000110000"},
-            {"k"c, "00001000000"},
-            {"l"c, "00001010100"},
-            {"m"c, "00001100100"},
-            {"n"c, "00001110000"},
-            {"o"c, "00010001000"},
-            {"p"c, "00010010100"},
-            {"q"c, "00010100100"},
-            {"r"c, "00010110000"},
-            {"s"c, "00011001000"},
-            {"t"c, "00011010100"},
-            {"u"c, "00011100100"},
-            {"v"c, "00011110000"},
-            {"w"c, "00100001000"},
-            {"x"c, "00100010100"},
-            {"y"c, "00100100100"},
-            {"z"c, "00100110000"},
-            {"{"c, "00101001000"},
-            {"|"c, "00101010100"},
-            {"}"c, "00101100100"},
-            {"~"c, "00101110000"},
-          {StartB, "11010000100"},
-          {StartC, "11010011100"},
-        {StopCode, "11101011000"}
-    }
-
-    ''' <summary>
-    ''' Use this to display a barcode using Unicode text.
-    ''' Always combine with a monospace font for accurate scanning.
-    ''' </summary>
-    ''' <param name="text">The original text.</param>
-    ''' <param name="height">How many lines high should the barcode be?</param>
-    ''' <returns>A barcode you can scan when displayed in monospace font.</returns>
-    Public Function Code128Barcode(text As String, Optional height As Integer = 8) As String
-        Dim barcodeLine As String = GetBarcodeLines(GetCode128EncodedString(text)) & Environment.NewLine
-        Dim output As New StringBuilder(barcodeLine)
-        For i As Integer = 0 To height
-            output.AppendLine(barcodeLine)
-        Next i
-
-        Return output.ToString()
-    End Function
-
-    ''' <summary>
-    ''' Translates encoded text into the barcode glyphs used to represent those characters.
-    ''' </summary>
-    ''' <param name="encoded">Encoded text, from GetCode128EncodedString</param>
-    ''' <returns>Lines and spaces.</returns>
-    Public Function GetBarcodeLines(encoded As String) As String
-
-        'If _code128BarPerChar Is Nothing Then 
-
-        Dim barcodeGlyphs As New StringBuilder
-        For Each character As Char In encoded
-            Dim barChar As String = Code128BarPerChar(character)
-            Dim count As Integer = barChar.Length - 1
-            For i As Integer = 0 To count Step 2
-                Dim glyph As String = barChar(i)
-                If i < count Then
-                    glyph &= barChar(i + 1)
-                Else
-                    glyph &= "0"
-                End If
-
-                barcodeGlyphs.Append(BarcodeLines(glyph))
-            Next i
-        Next character
-
-        Return barcodeGlyphs.ToString()
-    End Function
+    Private Const Gs1MaximumLength As Integer = 48
 
     ''' <summary>
     ''' Converts the input text to a Code 128 encoded string that can be used with a barcode font.
@@ -208,36 +46,33 @@ Public Module Code128
         ' Validate input
         If text.Length < 1 Then
             Return text
-        ElseIf text.Length > 48 Then
-            Throw New ArgumentException("Input is too long and would not scan properly. Please use less than 48 characters.", NameOf(text))
-        End If
-
-        Dim invalidCharacters As New Regex("[^ -~]", RegexOptions.Multiline Or RegexOptions.Compiled)
-        If invalidCharacters.IsMatch(text) Then
-            Throw New ArgumentException("Invalid character in barcode string. Please only use the lower 127 ASCII characters", NameOf(text))
+        ElseIf text.Length > Gs1MaximumLength Then
+            Throw New ArgumentOutOfRangeException("text", "Input is too long and would not scan properly. Please use less than 48 characters.")
         End If
 
         ' Preamble and first character
-        Dim optimizedBarcode As New StringBuilder
+        Dim optimizedBarcode As String = String.Empty
         Dim useTableB As Boolean = True
         Dim checkSum As Integer
         Dim startAt As Integer
         If IsAllNumbers(text, 0, 4) Then
             ' Use Table C
-            optimizedBarcode.Append(StartC)
+            optimizedBarcode &= StartC
             checkSum = CheckSumChar(StartC, 1)
             useTableB = False
             Dim value As Char = GetTwoDigitsToAscii(text, 0)
-            optimizedBarcode.Append(value)
+            optimizedBarcode &= value
             checkSum += CheckSumChar(value, optimizedBarcode.Length - 1)
             startAt = 2
         Else
-            optimizedBarcode.Append(StartB)
+            optimizedBarcode &= StartB
             checkSum = CheckSumChar(StartB, 1)
 
             ' Process 1 digit with table B
-            optimizedBarcode.Append(text(0))
-            checkSum += CheckSumChar(text(0), optimizedBarcode.Length - 1)
+            Dim nextValue As Char = text(0)
+            CheckValid(nextValue)
+            optimizedBarcode &= nextValue
+            checkSum += CheckSumChar(nextValue, optimizedBarcode.Length - 1)
             startAt = 1
         End If
 
@@ -249,7 +84,7 @@ Public Module Code128
                 Dim dataChunk As Integer = If(position + 3 = text.Length - 1, 4, 6)
                 If IsAllNumbers(text, position, dataChunk) Then
                     useTableB = False ' Use Table C
-                    optimizedBarcode.Append(SwitchC)
+                    optimizedBarcode &= SwitchC
                     checkSum += CheckSumChar(SwitchC, optimizedBarcode.Length - 1)
                 End If
             End If
@@ -258,14 +93,14 @@ Public Module Code128
                 ' Using Table C, try to process 2 digits
                 If IsAllNumbers(text, position, TableCDataWidth) Then
                     Dim value As Char = GetTwoDigitsToAscii(text, position)
-                    optimizedBarcode.Append(value)
+                    optimizedBarcode &= value
                     checkSum += CheckSumChar(value, optimizedBarcode.Length - 1)
 
                     ' Increment because 2 digits were consumed in this pass
                     position += 1
                 Else
                     ' Doesn't have 2 digits left, switch to Table B
-                    optimizedBarcode.Append(SwitchB)
+                    optimizedBarcode &= SwitchB
                     checkSum += CheckSumChar(SwitchB, optimizedBarcode.Length - 1)
                     useTableB = True
                 End If
@@ -273,12 +108,14 @@ Public Module Code128
 
             If useTableB Then
                 ' Process 1 digit with table B
-                optimizedBarcode.Append(text(position))
-                checkSum += CheckSumChar(text(position), optimizedBarcode.Length - 1)
+                Dim nextValue As Char = text(position)
+                CheckValid(nextValue)
+                optimizedBarcode &= nextValue
+                checkSum += CheckSumChar(nextValue, optimizedBarcode.Length - 1)
             End If
 
             If optimizedBarcode.Length > MaxEncodedLength - 2 Then
-                Throw New ArgumentException("Input is too long and would not scan properly. Compressed length should not exceed 27 characters.", NameOf(text))
+                Throw New ArgumentOutOfRangeException("text", "Input is too long and would not scan properly. Compressed length should not exceed 27 characters.")
             End If
         Next position
 
@@ -288,7 +125,7 @@ Public Module Code128
         checkSum = If(checkSum < AsciiCodePageBoundary, checkSum + AsciiLowerOffset, checkSum + AsciiUpperOffset)
 
         ' Add the checksum and STOP characters
-        optimizedBarcode.Append(ChrW(checkSum)).Append(StopCode)
+        optimizedBarcode &= ChrW(checkSum) & StopCode
 
         Return optimizedBarcode.ToString()
     End Function
@@ -338,4 +175,17 @@ Public Module Code128
 
         Return True
     End Function
+
+    Public Function IsValid128(c As Char) As Boolean
+        Select Case AscW(c)
+            Case 32 To 126
+                Return True
+            Case Else
+                Return False
+        End Select
+    End Function
+
+    Public Sub CheckValid(c As Char)
+        If Not IsValid128(c) Then Throw New ArgumentOutOfRangeException("c", "Invalid character in barcode string. Please only use only printable characters in the lower 127 range.")
+    End Sub
 End Module
